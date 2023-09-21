@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "moduleResolution": "Bundler",
+    "module": "ES6",
+    "jsx": "react-jsx"
+  },
+  "include": ["src/*", "src/custom.d.ts"]
+}

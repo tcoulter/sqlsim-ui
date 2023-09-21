@@ -1,0 +1,46 @@
+.bar {
+  background-color: #24242b;
+  height: 3em;
+  color: white;
+
+  .row {
+    align-items: center;
+    height: 100%;
+  }
+
+  button {
+    margin-right: 1em;
+
+    .text {
+      line-height: 14px;
+      margin-right: 0.5em;
+    }
+
+    svg, .text {
+      position: relative;
+      top: -2px;
+      vertical-align: middle;
+      display: inline-block; 
+    }
+
+    svg.stroke {
+      stroke: #000;
+      stroke-width: 1px;
+    }
+  }
+
+  h1 {
+    color: white; 
+    font-size: 1.2em;
+    margin: 0px; 
+  }
+
+  .right {
+    text-align: right;
+  }
+
+  .left {
+    text-align: left; 
+    font-size: 0.9em;
+  }
+}
