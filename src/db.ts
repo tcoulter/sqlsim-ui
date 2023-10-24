@@ -1,8 +1,9 @@
 import { MongoClient } from "mongodb";
+import { CellData } from "sqlsim/storage/cell";
 const uri = "mongodb+srv://tim:wVMeL85jKioy8AQE@cluster0.cuesaye.mongodb.net/?retryWrites=true&w=majority";
 
 const client = new MongoClient(uri);
-import { CellData } from "sqlsim/storage/cell";
+
 
 export type Instance = {
   slug: string;
