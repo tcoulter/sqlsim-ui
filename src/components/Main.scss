@@ -4,6 +4,7 @@
 
   .row {
     height: 100%;
+    overflow: scroll;
   }
 
   .left {
@@ -16,6 +17,10 @@
     border-left: solid 0.5em #24242b;
     color: white;
     text-align: left;
+    max-width: 50%;
+    overflow-x: scroll;
+    overflow-y: scroll;
+    white-space: pre-wrap;
   }
 
   .result-table {

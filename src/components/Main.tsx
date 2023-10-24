@@ -8,47 +8,21 @@ import Editor, {useMonaco} from "@monaco-editor/react";
 
 import SQLSim from "sqlsim";
 
-const code = `-- create
-CREATE TABLE Employees (
-    id INTEGER,
-    mgr_id INTEGER,
-    name TEXT NOT NULL,
-    dept TEXT NOT NULL,
-    salary INTEGER
-);
-
--- insert
-INSERT INTO Employees VALUES (0001, NULL, 'Ava', 'Sales', 300000);        -- Chief Sales Officer
-INSERT INTO Employees VALUES (0002, NULL, 'Dave', 'Accounting', 270000);  -- Chief Financial Officer
-INSERT INTO Employees VALUES (0003, 0001, 'Clark', 'Sales', 160000);      -- Middle manager
-INSERT INTO Employees VALUES (0004, 0002, 'Bob', 'Accounting', 165000);   -- Middle manager
-INSERT INTO Employees VALUES (0005, 0003, 'Derek', 'Sales', 20000);       -- Intern
-INSERT INTO Employees VALUES (0006, 0004, 'Julie', 'Accounting', 72000);  -- Individual contributor
-
--- correlated subquery
-SELECT name, dept, salary
-FROM Employees AS e
-WHERE salary >= (
-    SELECT AVG(salary)
-    FROM Employees
-    WHERE dept = e.dept
-)
-ORDER BY name;`;
-
 type MainProps = {
+  code:string,
   onChange:(code:string) => void,
-  results:ReturnType<typeof SQLSim.run>|null
+  results:ReturnType<typeof SQLSim.run>|null,
+  error: Error|string|undefined
 }
 
-function Main({onChange, results}:MainProps) {
+function Main({code, onChange, results, error}:MainProps) {
   let monaco:ReturnType<typeof useMonaco>;
   monaco = useMonaco();
 
   const [isThemeLoaded, setIsThemeLoaded] = useState(false);
-  const [tables, setTables] = useState<Array<ReactElement>>();
+  const [output, setOutput] = useState<ReactElement|Array<ReactElement>>();
 
   useEffect(() => {
-    console.log(monaco)
     if (monaco && monaco) {
       monaco.editor.defineTheme('HitItLikeOneCompiler', {
         base: 'vs-dark',
@@ -59,14 +33,25 @@ function Main({onChange, results}:MainProps) {
         },
       });
       setIsThemeLoaded(true);
-
-      // While we're here doing only one thing once, let's pass the
-      // default code to onChange so that listeners have it on load.
-      onChange(code);
     }
   }, [monaco]);
 
   useEffect(() => {
+    if (typeof error != "undefined") {
+      setOutput(
+        <table className="result-table">
+          <tbody>
+            <tr>
+              <td style={{whiteSpace: "pre-wrap"}}>
+                {typeof error != "string" ? error.message + "\n" + (error.stack || "") : error }
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      );
+      return;
+    }
+
     if (results != null) {
       let tableElements:Array<ReactElement> = [];
 
@@ -76,7 +61,6 @@ function Main({onChange, results}:MainProps) {
             <table key={"result" + resultIndex} className="result-table">
               <tbody>
                 {value.map((row, rowIndex) => {
-                  console.log(row)
                   return <tr key={"result" + resultIndex + ":row" + rowIndex}>
                     {row.map((cell, cellIndex) => {
                       return <td key={"result" + resultIndex + ":row" + rowIndex + ":cell" + cellIndex}>
@@ -91,9 +75,9 @@ function Main({onChange, results}:MainProps) {
         }
       });
 
-      setTables(tableElements);
+      setOutput(tableElements);
     }
-  }, [results])
+  }, [results, error])
 
   return (
     <Container fluid className='main'>
@@ -119,7 +103,7 @@ function Main({onChange, results}:MainProps) {
         </Col>
         <Col className="right">
           <h6>Output:</h6>
-          {tables}
+          {output}
         </Col>
       </Row>
     </Container>

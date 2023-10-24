@@ -1,27 +1,42 @@
-import { MongoClient } from "mongodb";
-const uri = "mongodb+srv://tim:wVMeL85jKioy8AQE@cluster0.cuesaye.mongodb.net/?retryWrites=true&w=majority";
+import * as Realm from "realm-web";
+import SQLSim from "sqlsim";
 
-const client = new MongoClient(uri);
-import { CellData } from "sqlsim/storage/cell";
+const app = new Realm.App({ id: "application-0-nnuel" });
 
-export type Instance = {
+const DATA_SOURCE_NAME = "mongodb-atlas";
+const DATABASE_NAME = "sqlsim-ui";
+
+// For MongoDB so we can have correct typings
+export type Document = {
+  _id: string
+}
+
+// Our DB objects
+export interface Instance extends Document {
   slug: string;
   code: string;
 }
 
-export type Result = {
-  error: undefined | string,
-  data: undefined | Array<Array<CellData>>
+export interface Result extends Document {
+  error: undefined | Error | string,
+  data: undefined | ReturnType<typeof SQLSim.run>
 }
 
-export type Run = {
+export interface Run extends Document {
   runID: string,
   code: string,
   result: Result
 }
 
-export async function save<T>(collection_name:string, object:any, update_filter?:any) {
-  const database = client.db("sqlsim-ui");
+export async function initialize() {
+  const credentials = Realm.Credentials.anonymous();
+  return app.logIn(credentials);
+}
+
+export async function save<T extends Document>(collection_name:string, object:any, update_filter?:any) {
+  const mongo = app.currentUser.mongoClient(DATA_SOURCE_NAME);
+  const database = mongo.db(DATABASE_NAME);
+
   const collection = database.collection<T>(collection_name);
 
   if (typeof update_filter == "undefined") {
@@ -33,11 +48,13 @@ export async function save<T>(collection_name:string, object:any, update_filter?
   }
 }
 
-export async function load<T>(collection_name:string, find_filter:any, ) {
-  const database = client.db("sqlsim-ui");
+export async function load<T extends Document>(collection_name:string, find_filter:any, ) {
+  const mongo = app.currentUser.mongoClient(DATA_SOURCE_NAME);
+  const database = mongo.db(DATABASE_NAME);
+
   const collection = database.collection<T>(collection_name);
 
-  return collection.findOne(
+  return collection.find(
     find_filter
     // {
     //   sort: { rating: -1 },
