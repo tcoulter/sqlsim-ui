@@ -1,0 +1,26 @@
+.loading-button {
+  @keyframes spin { 100% { -webkit-transform: rotate(360deg); transform:rotate(360deg); } }
+
+  svg.white {
+    fill: #FFF;
+    stroke: #FFF;
+    stroke-width: 1px;
+  }
+
+  &.loading {
+    transition: none;
+    visibility: visible;
+    opacity: 1;
+  }
+
+  &.loading svg {
+    animation:spin 1s linear infinite;
+  }
+
+  &.success {
+    visibility: hidden;
+    opacity: 0;
+    transition: visibility 0s 1.25s, opacity 1.25s linear;
+    transition-timing-function: cubic-bezier(.96,-0.27,1,.69);
+  }
+}

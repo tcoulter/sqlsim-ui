@@ -6,12 +6,13 @@ import './App.scss';
 
 import Bar from "./components/Bar";
 import Main from "./components/Main";
-import { useEffect, useRef, useState } from 'react';
+import StatsModal from "./components/StatsModal";
+import { useEffect, useState } from 'react';
 
 import SQLSim from 'sqlsim';
 
 import * as db from "./db";
-import { Instance, Result} from "./db";
+import { Runs } from "./db";
 
 const DEFAULT_CODE = `-- create
 CREATE TABLE Employees (
@@ -51,6 +52,7 @@ function App() {
   let [results, setResults] = useState<ReturnType<typeof SQLSim.run>|null>(null);
   let [error, setError] = useState<Error|string|undefined>();
   let [loading, setLoading] = useState(false);
+  let [showStatsModal, setShowStatsModal] = useState(false);
 
   function startRequest() {
     setLoading(true);
@@ -74,7 +76,7 @@ function App() {
 
     // Get the slug
     const {
-      host, hostname, href, origin, pathname, port, protocol, search
+      pathname
     } = window.location
   
     let givenSlug = pathname.replace(/\//g, "");
@@ -97,25 +99,15 @@ function App() {
     // Now that the slug has been set, let's kick off data loading. 
     if (typeof slug != "undefined") {
       startRequest();
-      db.load<Instance>("instances", {slug: slug}).then(async (result:Array<Instance>) => {
+      db.query<Runs>("runs").findOne({slug: slug}, {sort: {updated_at: -1}}).then(async (run:Runs) => {
         endRequest();
+
         // If we got no result (e.g., this is a new instance)
-        // then lets save it with some default code
-        if (result.length == 0) {
-          startRequest();
-          await db.save<Instance>("instances", {
-            slug: slug,
-            code: DEFAULT_CODE
-          }).then(() => {
-            endRequest();
-            setCode(DEFAULT_CODE);
-          }).catch((e) => {
-            endRequest();
-            throw e;
-          })
+        // then lets just use the default code
+        if (run == null) {
+          setCode(DEFAULT_CODE);
         } else {
-          let instance = result[0];
-          setCode(instance.code)
+          setCode(run.code)
         }
       }).catch((e) => {
         endRequest();
@@ -141,13 +133,9 @@ function App() {
     // but perfrom the requests 
     startRequest();
     Promise.all([
-      db.save<Instance>("instances", {
-        slug: slug,
-        code: code
-      }, {
-        slug: slug
-      }),
-      db.save<Result>("results", {
+      db.save<Runs>("runs", {
+        slug, 
+        code,
         result: typeof output != "undefined" ? output.results : undefined,
         error: error
       })
@@ -161,8 +149,9 @@ function App() {
 
   return (
     <div className="App">
-      <Bar loading={loading} onRun={runCode}/>
+      <Bar loading={loading} onRun={runCode} onStats={() => {setShowStatsModal(true)}}/>
       <Main code={code} onChange={setCode} error={error} results={results}/>
+      <StatsModal show={showStatsModal} slug={slug} onClose={() => {setShowStatsModal(false)}}/>
     </div>
   );
 }

@@ -5,40 +5,35 @@ import Row from 'react-bootstrap/Row';
 import Col from 'react-bootstrap/Col';
 import { Button } from "react-bootstrap";
 
-import { ChevronDown } from "react-bootstrap-icons";
+import LoadingButton from "./LoadingButton";
+
+import { ClipboardData } from "react-bootstrap-icons";
 import { CodeSlash } from "react-bootstrap-icons";
 import { Fire } from "react-bootstrap-icons";
-import { ArrowRepeat } from "react-bootstrap-icons";
-import { HandThumbsUpFill } from "react-bootstrap-icons";
+
 
 type BarProps = {
   loading: boolean,
   onRun:() => void
+  onStats:() => void
 }
 
-function Bar({loading, onRun}:BarProps) {
+function Bar({loading, onRun, onStats}:BarProps) {
   return (
     <Container fluid className='bar'>
       <Row>
         <Col className="left">
-          Code <CodeSlash/>
+          MySQL <CodeSlash/>
         </Col>
         <Col>
           <h1>SQLSim</h1>
         </Col>
         <Col className="right">
-          <Button className={loading ? "loading" : "success"} variant={loading ? "warning" : "success"} size="sm">
-            {!!loading && 
-              <ArrowRepeat className="white"/>
-            }
-            {!loading && 
-              <HandThumbsUpFill className="white"/>
-            }
-          </Button>
+          <LoadingButton loading={loading} size="sm"/>
 
-          <Button variant="light" size="sm">
-            <span className="text">MYSQL</span>
-            <ChevronDown className="stroke"/>
+          <Button variant="light" size="sm" onClick={onStats}>
+            <span className="text">STATS</span>
+            <ClipboardData />
           </Button>
 
           <Button className="run" size="sm" onClick={onRun}>
