@@ -46,7 +46,6 @@ function createSlug() {
 }
 
 function App() {
-  let [user, setUser] = useState<Realm.User|undefined>();
   let [slug, setSlug] = useState<string|undefined>(); 
   let [code, setCode] = useState<string|undefined>();
   let [results, setResults] = useState<ReturnType<typeof SQLSim.run>|null>(null);
@@ -64,16 +63,6 @@ function App() {
   
   // Initial kickoff 
   useEffect(() => {
-    // Initialize the database
-    startRequest()
-    db.initialize().then((user) => {
-      endRequest();
-      setUser(user);
-    }).catch((e) => {
-      endRequest();
-      throw e;
-    });
-
     // Get the slug
     const {
       pathname
@@ -90,7 +79,7 @@ function App() {
 
   useEffect(() => {
     // Don't move forward until we have both items.
-    if (typeof slug == "undefined" || typeof user == "undefined") {
+    if (typeof slug == "undefined") {
       return;
     }
 
@@ -99,8 +88,18 @@ function App() {
     // Now that the slug has been set, let's kick off data loading. 
     if (typeof slug != "undefined") {
       startRequest();
-      db.query<Runs>("runs").findOne({slug: slug}, {sort: {updated_at: -1}}).then(async (run:Runs) => {
+      db.query({
+        where: {
+          slug: slug
+        },
+        orderBy: {
+          updated_at: "desc"
+        },
+        take: 1
+      }).then((runs:Runs[]) => {
         endRequest();
+
+        let run = runs[0] || null;
 
         // If we got no result (e.g., this is a new instance)
         // then lets just use the default code
@@ -114,7 +113,7 @@ function App() {
         throw e;
       });
     }
-  }, [slug, user])
+  }, [slug])
 
   function runCode() {
     let error:Error|undefined;
@@ -133,11 +132,11 @@ function App() {
     // but perfrom the requests 
     startRequest();
     Promise.all([
-      db.save<Runs>("runs", {
+      db.save({
         slug, 
         code,
         result: typeof output != "undefined" ? output.results : undefined,
-        error: error
+        error: error instanceof Error ? JSON.parse(JSON.stringify(error.toString())) : error
       })
     ]).then(() => {
       endRequest();

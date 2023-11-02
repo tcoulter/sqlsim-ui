@@ -2,14 +2,21 @@
   "name": "sqlsim-ui",
   "version": "0.1.0",
   "private": true,
+  "proxy": "http://localhost:5000",
   "dependencies": {
+    "@koa/cors": "^4.0.0",
     "@monaco-editor/react": "^4.5.2",
+    "@prisma/client": "^5.5.2",
     "@testing-library/jest-dom": "^5.17.0",
     "@testing-library/react": "^13.4.0",
     "@testing-library/user-event": "^13.5.0",
     "@types/react": "^18.2.22",
     "@types/react-dom": "^18.2.7",
     "bootstrap": "^5.3.2",
+    "concurrently": "^8.2.2",
+    "koa": "^2.14.2",
+    "koa-body": "^6.0.1",
+    "koa-router": "^12.0.1",
     "number-to-base64": "^1.0.5",
     "react": "^18.2.0",
     "react-bootstrap": "^2.8.0",
@@ -22,7 +29,7 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "concurrently \"node ./server.js\" \"react-scripts start\"",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
@@ -44,5 +51,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "prisma": "^5.5.2"
   }
 }

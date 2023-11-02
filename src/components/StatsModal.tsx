@@ -26,62 +26,56 @@ function StatsModal({slug, show, onClose}:StatsModalProps) {
     setLoading(true);
     Promise.all([
       // All runs for the current slug
-      db.query<Runs>("runs").count({
-        slug: slug
+      db.aggregate({
+        _count: {
+          slug: true
+        },
+        where: {
+          slug: slug
+        }
       }),
       // All runs in the database
-      db.query<Runs>("runs").count({}),
-      // Number of distinct slugs created
-      db.query<Runs>("runs").aggregate([
-        { $group : { _id : "$slug" } }
-      ]),
+      db.aggregate({
+        _count: {
+          slug: true
+        }
+      }),
+      // Get all slugs created
+      db.groupBy({
+        by: ['slug']
+      }),
+      // Total number of successful runs
+      db.count({
+        where: {
+          result: {
+            not: null
+          }
+        }
+      }),
+      // Total number of unsuccessful runs
+      db.count({
+        where: {
+          error: {
+            not: null
+          }
+        }
+      }),
+      // Unlike Mongo, to get all the table names, we have to do the processing locally
+      // Which, honestly, is much easier to process mentally, but requires ALL the data
+      // in the database to be passed to the app. That's generally a bad decision.  
+      db.query({}).then((runs) => {
+        let tableNames = runs.map((run) => {
+          let matches = Array.from(run.code.matchAll(/CREATE\s+TABLE\s+([a-zA-Z\d]+)/gm))
 
-      // Total number of successful runs and total number of unsuccessful runs
-      // (grouping by expression)
-      db.query<Runs>("runs").aggregate([
-        { 
-          $group: {
-           _id: {$not: {$eq: ["$error", null]}},
-           count: {$count: {} },
-          }
-        }
-      ]),
-      // Distinct table names from all runs, building an aggregation pipeline
-      // that searches for CREATE TABLE statements (case insensitive)
-      // and then parses the names of the tables, all within the pipeline.
-      db.query<Runs>("runs").aggregate([
-        {
-          $project:{
-            code: 1,
-            start: {$indexOfCP: [{$toUpper: "$code"}, "CREATE TABLE"]}
-          }
-        },
-        {
-          $project:{
-            code: 1,
-            start: {$indexOfCP: ["$code", " ", {$add: ["$start", 12]}]}
-          }
-        },
-        {
-          $project:{
-            code: 1,
-            start: 1,
-            end: {$indexOfCP: ["$code", "(", "$start"]}
-          }
-        },
-        {
-          $project:{
-            tableName: {
-              $trim: {input: {$substr: ["$code", "$start", {$subtract: ["$end", "$start"]}]}}
+          return matches.map((match) => {
+            if (match.length >= 2) {
+              return match[1];
             }
-          }
-        },
-        {
-          $group: {
-            _id: "$tableName"
-          }
-        }
-      ])
+          })
+        })
+        return Array.from(new Set(tableNames.flat()).values());
+      })
+      
     ]).then((results) => {
       setLoading(false);
       setResults(results);
@@ -110,27 +104,26 @@ function StatsModal({slug, show, onClose}:StatsModalProps) {
         {results && 
           <>
             <div>
-              <span className="title">Total runs for this playground ({slug}):</span> {results[0]}
+              <span className="title">Total runs for this playground ({slug}):</span> {results[0]._count.slug}
             </div>
             <div>
-              <span className="title">Total runs for all playgrounds:</span> {results[1]}
+              <span className="title">Total runs for all playgrounds:</span> {results[1]._count.slug}
             </div>
             <div>
-              <span className="title">Total successful runs for all playgrounds:</span> {results[3][0].count}
+              <span className="title">Total successful runs for all playgrounds:</span> {results[3]}
             </div>
             <div>
-              <span className="title">Total unsuccessful runs (errors) for all playgrounds:</span> {results[3][1].count}
+              <span className="title">Total unsuccessful runs (errors) for all playgrounds:</span> {results[4]}
             </div>
             <div>
-              <span className="title">All slugs:</span> {results[2].map((item) => item._id).sort().map((name) => {
+              <span className="title">All slugs:</span> {results[2].map((item:{slug: string}) => item.slug).sort().map((name:string) => {
                 return <span key={name + "_span"}><a key={name + "_link"} href={"/" + name} target="_blank">{name}</a>,&nbsp;</span>
               })}
             </div>
             <div>
-              <span className="title">All tables created:</span> {results[4].map((item) => item._id).sort().join(", ")}
+              <span className="title">All tables created:</span> {results[5].join(", ")}
             </div>
           </>
-           
         }
        
       </Modal.Body>
